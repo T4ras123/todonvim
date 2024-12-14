@@ -52,15 +52,13 @@ local function render_popup()
     if not (popup_buf and api.nvim_buf_is_valid(popup_buf)) then
         popup_buf = api.nvim_create_buf(false, true)
     end
-
     api.nvim_buf_set_option(popup_buf, 'modifiable', true)
-
+    
     local lines = {}
     task_line_indices = {} 
-
     table.insert(lines, "        📋 To-Do List")
     table.insert(lines, "-------------------------------")
-
+    
     for i, task in ipairs(tasks) do
         if not task.done then
             local task_name = task.name or "Unnamed Task"
@@ -72,7 +70,7 @@ local function render_popup()
             end
         end
     end
-
+    
     local has_completed = false
     for _, task in ipairs(tasks) do
         if task.done then
@@ -80,12 +78,10 @@ local function render_popup()
             break
         end
     end
-
+    
     if has_completed then
         table.insert(lines, "-------------------------------")
         table.insert(lines, "        ✔️ Completed Tasks")
-
-        -- Add completed tasks
         for i, task in ipairs(tasks) do
             if task.done then
                 local task_name = task.name or "Unnamed Task"
@@ -98,32 +94,36 @@ local function render_popup()
             end
         end
     end
-
+    
     if #task_line_indices == 0 then
         table.insert(lines, "  No tasks available. Press 'a' to add a new task.")
     end
-
+    
     local popup_height = #lines
-
+    local height = (M.config.window.height == 'auto') and popup_height or M.config.window.height
+    
     if not (popup_win and api.nvim_win_is_valid(popup_win)) then
         popup_win = api.nvim_open_win(popup_buf, true, {
             relative = 'editor',
-            width = 50,
-            height = popup_height,
+            width = M.config.window.width,
+            height = height,
             row = 5,
             col = 10,
             style = 'minimal',
-            border = 'rounded',
+            border = M.config.window.border,
         })
         setup_mappings()
     else
-        api.nvim_win_set_config(popup_win, { height = popup_height })
+        api.nvim_win_set_config(popup_win, { 
+            width = M.config.window.width,
+            height = height,
+            border = M.config.window.border,
+        })
     end
-
+    
     api.nvim_buf_set_lines(popup_buf, 0, -1, false, lines)
-
     api.nvim_buf_set_option(popup_buf, 'modifiable', false)
-
+    
     if #task_line_indices == 0 then
         current_selection = 0
     else
@@ -134,10 +134,9 @@ local function render_popup()
             current_selection = 1
         end
     end
-
+    
     local cursor_pos = 3  
     cursor_pos = cursor_pos + current_selection - 1
-
     local total_lines = #lines
     if cursor_pos > total_lines then
         cursor_pos = total_lines
@@ -145,7 +144,6 @@ local function render_popup()
     if cursor_pos < 1 then
         cursor_pos = 1
     end
-
     if current_selection > 0 then
         api.nvim_win_set_cursor(popup_win, { cursor_pos, 1 })
     else
@@ -233,7 +231,27 @@ function M.open_popup()
     render_popup()
 end
 
-function M.setup()
+function M.setup(config)
+    M.config = {
+        window = {
+            width = 50,
+            height = 'auto',
+            border = 'rounded'
+        },
+        highlights = {
+            border = 'FloatBorder',
+            selected = 'Visual',
+            title = 'Title'
+        },
+        icons = {
+            pending = '○',
+            done = '✓'
+        }
+    }
+    
+    if config then
+        M.config = vim.tbl_deep_extend('force', M.config, config)
+    end
 end
 
 return M
