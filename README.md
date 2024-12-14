@@ -25,7 +25,7 @@ Using packer.nvim:
 
 ```lua
 use {
-  'vover/todonvim',
+  'T4ras123/todonvim',
   config = function()
     require('todonvim').setup({
       -- optional configuration
